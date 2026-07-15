@@ -1,0 +1,17 @@
+## Exemple de fichier généré automatiquement par "terraform apply"
+## (voir terraform/outputs.tf -> resource "local_file" "ansible_inventory").
+## Le vrai fichier "k3s_hosts.ini" (ignoré par git) est produit à cet
+## emplacement automatiquement, inutile de le créer/copier à la main.
+[k3s_control_plane]
+203.0.113.10 ansible_host=203.0.113.10 private_ip=10.42.1.10 ansible_user=mspr ansible_ssh_private_key_file=~/.ssh/id_ed25519
+
+[k3s_workers]
+203.0.113.11 ansible_host=203.0.113.11 private_ip=10.42.1.11 ansible_user=mspr ansible_ssh_private_key_file=~/.ssh/id_ed25519
+203.0.113.12 ansible_host=203.0.113.12 private_ip=10.42.1.12 ansible_user=mspr ansible_ssh_private_key_file=~/.ssh/id_ed25519
+
+[k3s_cluster:children]
+k3s_control_plane
+k3s_workers
+
+[k3s_cluster:vars]
+ansible_ssh_common_args='-o StrictHostKeyChecking=accept-new'

@@ -1,0 +1,63 @@
+---
+# =============================================================================
+# Playbook : bootstrap du cluster K3s (1 control-plane + 2 workers) sur
+# l'infrastructure provisionnée par Terraform (Mission 6 du cahier des
+# charges MSPR).
+#
+# Prérequis :
+#   - terraform apply déjà exécuté dans terraform/ (génère
+#     inventory/k3s_hosts.ini automatiquement, voir terraform/outputs.tf)
+#   - Connectivité SSH vers les 3 instances avec la clé privée déclarée dans
+#     l'inventaire (variable ssh_private_key_path côté Terraform)
+#   - À la fin de ce playbook, le kubeconfig du cluster est rapatrié
+#     localement vers le chemin défini par "kubeconfig_path"
+#     (group_vars/all.yml), utilisé ensuite par les playbooks Mission 7
+#     (deploy_odoo.yml, configure_https.yml).
+#
+# Utilisation :
+#   ansible-playbook playbooks/deploy_k3s_cluster.yml
+# =============================================================================
+
+- name: Installer le control-plane K3s
+  hosts: k3s_control_plane
+  become: true
+  gather_facts: true
+  roles:
+    - role: k3s_cluster
+      vars:
+        k3s_node_role: server
+
+- name: Installer les workers K3s et les joindre au cluster
+  hosts: k3s_workers
+  become: true
+  gather_facts: false
+  roles:
+    - role: k3s_cluster
+      vars:
+        k3s_node_role: agent
+
+- name: Rapatrier le kubeconfig et l'adapter pour un accès externe
+  hosts: k3s_control_plane
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Copier le kubeconfig du control-plane vers le control node Ansible
+      ansible.builtin.fetch:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: "{{ kubeconfig_path }}"
+        flat: true
+
+    - name: Remplacer l'adresse locale par l'IP publique du control-plane
+      ansible.builtin.replace:
+        path: "{{ kubeconfig_path }}"
+        regexp: 'https://127\.0\.0\.1:6443'
+        replace: "https://{{ ansible_host }}:6443"
+      become: false
+      delegate_to: localhost
+
+    - name: Restreindre les droits du kubeconfig local (lecture propriétaire uniquement)
+      ansible.builtin.file:
+        path: "{{ kubeconfig_path }}"
+        mode: "0600"
+      become: false
+      delegate_to: localhost

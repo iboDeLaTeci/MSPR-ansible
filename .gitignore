@@ -1,2 +1,12 @@
 collections/
 *.retry
+
+# Secrets / valeurs locales - ne jamais committer
+packer/variables.pkrvars.hcl
+terraform/terraform.tfvars
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/.terraform/
+inventory/k3s_hosts.ini
+*.pem
+*.pub.local

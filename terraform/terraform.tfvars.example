@@ -1,0 +1,21 @@
+# Copier ce fichier en "terraform.tfvars" (ignoré par git) et renseigner vos
+# propres valeurs avant de lancer "terraform apply".
+
+aws_region = "eu-west-3"
+
+# ID de l'AMI produite par Packer (mission 4) : récupéré dans la sortie de
+# "packer build", ou via: aws ec2 describe-images --owners self \
+#   --filters "Name=name,Values=mspr-k3s-node-*" --query "Images[].ImageId"
+ami_id = "ami-REMPLACER_MOI"
+
+# Nom d'une Key Pair EC2 existante dans la région ciblée (créée au préalable
+# dans la console AWS ou via `aws ec2 create-key-pair`)
+key_name = "REMPLACER_MOI"
+
+# Restreindre l'accès SSH/API à VOTRE IP publique uniquement (ex: "82.65.12.3/32")
+allowed_ssh_cidr = "0.0.0.0/0"
+
+# Chemin vers la clé privée correspondant à la clé publique injectée dans
+# l'AMI par Packer (mspr_ssh_public_key) -- utilisée pour générer
+# l'inventaire Ansible automatiquement.
+ssh_private_key_path = "~/.ssh/id_ed25519"

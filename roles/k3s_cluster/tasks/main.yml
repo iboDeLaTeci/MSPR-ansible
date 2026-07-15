@@ -1,0 +1,14 @@
+---
+# =============================================================================
+# Rôle "k3s_cluster" : installe K3s en mode "server" (control-plane) ou
+# "agent" (worker) selon la variable k3s_node_role, passée par le playbook
+# playbooks/deploy_k3s_cluster.yml pour chaque groupe d'hôtes.
+# =============================================================================
+
+- name: Installer et démarrer K3s en mode control-plane
+  ansible.builtin.include_tasks: server.yml
+  when: k3s_node_role == 'server'
+
+- name: Installer et démarrer K3s en mode worker
+  ansible.builtin.include_tasks: agent.yml
+  when: k3s_node_role == 'agent'

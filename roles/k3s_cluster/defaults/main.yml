@@ -1,0 +1,5 @@
+---
+# Laisser vide pour installer la dernière version stable de K3s. Pour un
+# déploiement reproductible, épingler une version précise, ex: "v1.30.5+k3s1"
+k3s_version: ""
+k3s_install_url: https://get.k3s.io

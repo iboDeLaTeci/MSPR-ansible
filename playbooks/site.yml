@@ -1,5 +1,8 @@
 ---
-# Playbook global : déploie Odoo puis configure son accès HTTPS/SSL.
+# Playbook global : bootstrap le cluster K3s (mission 6), déploie Odoo
+# (mission 7) puis configure son accès HTTPS/SSL (mission 7).
+# Prérequis : terraform apply déjà exécuté (voir terraform/).
 # Utilisation : ansible-playbook playbooks/site.yml
+- import_playbook: deploy_k3s_cluster.yml
 - import_playbook: deploy_odoo.yml
 - import_playbook: configure_https.yml

@@ -1,14 +1,16 @@
 ---
 # =============================================================================
-# Variables globales - Déploiement Odoo + HTTPS/SSL sur Kubernetes (Mission 7)
+# Variables globales - Cluster K3s (Mission 6) + Odoo/HTTPS-SSL (Mission 7)
 # =============================================================================
 # ATTENTION : les valeurs marquées "A CHANGER" sont des valeurs par défaut de
 # démonstration. Ne pas les utiliser telles quelles en dehors d'un PoC.
 
-# Chemin vers le kubeconfig utilisé pour piloter le cluster (control-plane
-# créé lors de la Mission 6). Adapter selon l'environnement (kubeadm, k3s,
-# cluster managé type GKE/AKS/EKS, etc.)
-kubeconfig_path: "~/.kube/config"
+# Chemin vers le kubeconfig utilisé pour piloter le cluster. Un chemin dédié
+# (plutôt que ~/.kube/config) est utilisé pour ne jamais écraser votre
+# éventuelle configuration kubectl existante. Ce fichier est créé
+# automatiquement par playbooks/deploy_k3s_cluster.yml (Mission 6) ; il doit
+# exister avant de lancer les playbooks de la Mission 7.
+kubeconfig_path: "~/.kube/mspr-k3s-config"
 
 # -----------------------------------------------------------------------------
 # Odoo (chart Helm Bitnami)
