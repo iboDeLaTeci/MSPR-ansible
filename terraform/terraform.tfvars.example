@@ -1,7 +1,7 @@
 # Copier ce fichier en "terraform.tfvars" (ignoré par git) et renseigner vos
 # propres valeurs avant de lancer "terraform apply".
 
-aws_region = "eu-west-3"
+aws_region = "eu-west-1"
 
 # ID de l'AMI produite par Packer (mission 4) : récupéré dans la sortie de
 # "packer build", ou via: aws ec2 describe-images --owners self \

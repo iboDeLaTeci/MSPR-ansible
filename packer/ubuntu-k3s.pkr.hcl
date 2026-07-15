@@ -25,7 +25,7 @@ packer {
 variable "aws_region" {
   type        = string
   description = "Région AWS dans laquelle construire l'AMI"
-  default     = "eu-west-3"
+  default     = "eu-west-1"
 }
 
 variable "instance_type" {

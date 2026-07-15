@@ -5,7 +5,7 @@
 variable "aws_region" {
   type        = string
   description = "Région AWS où déployer l'infrastructure"
-  default     = "eu-west-3"
+  default     = "eu-west-1"
 }
 
 variable "project_name" {
@@ -39,7 +39,7 @@ variable "public_subnet_cidr" {
 variable "availability_zone" {
   type        = string
   description = "Zone de disponibilité du sous-réseau public"
-  default     = "eu-west-3a"
+  default     = "eu-west-1a"
 }
 
 variable "allowed_ssh_cidr" {
