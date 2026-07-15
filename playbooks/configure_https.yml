@@ -1,0 +1,29 @@
+---
+# =============================================================================
+# Playbook : configuration HTTPS + certificat SSL pour Odoo (Mission 7 du
+# cahier des charges MSPR).
+#
+# Déploie ingress-nginx (contrôleur d'entrée) et cert-manager (génération du
+# certificat autosigné), puis crée le Certificate et l'Ingress permettant
+# d'accéder à Odoo en HTTPS depuis l'extérieur du cluster.
+#
+# Prérequis :
+#   - playbooks/deploy_odoo.yml déjà exécuté (le Service "odoo" doit exister
+#     dans le namespace odoo_namespace).
+#
+# Utilisation :
+#   ansible-playbook playbooks/configure_https.yml
+# =============================================================================
+
+- name: Mise en place d'ingress-nginx et de cert-manager
+  hosts: k8s_control
+  gather_facts: false
+  roles:
+    - ingress_nginx
+    - cert_manager
+
+- name: Exposition d'Odoo en HTTPS via Ingress + certificat SSL autosigné
+  hosts: k8s_control
+  gather_facts: false
+  roles:
+    - odoo_ingress

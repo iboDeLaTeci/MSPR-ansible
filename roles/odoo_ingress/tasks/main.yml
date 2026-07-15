@@ -1,0 +1,84 @@
+---
+# =============================================================================
+# Rôle "odoo_ingress" : expose Odoo en HTTPS à l'extérieur du cluster.
+#
+# 1. Génère un certificat TLS (autosigné, via le ClusterIssuer cert-manager)
+# 2. Crée la ressource Ingress qui route odoo_domain vers le Service Odoo,
+#    en utilisant ce certificat.
+#
+# Prérequis : rôles "cert_manager" et "ingress_nginx" déjà exécutés, et
+# rôle "odoo" déjà exécuté (le Service "odoo" doit exister).
+# =============================================================================
+
+- name: Créer le certificat TLS autosigné pour le domaine Odoo
+  kubernetes.core.k8s:
+    kubeconfig: "{{ kubeconfig_path }}"
+    state: present
+    definition:
+      apiVersion: cert-manager.io/v1
+      kind: Certificate
+      metadata:
+        name: "{{ odoo_release_name }}-tls"
+        namespace: "{{ odoo_namespace }}"
+      spec:
+        # Secret Kubernetes (type kubernetes.io/tls) où cert-manager stocke
+        # la clé privée + le certificat généré, réutilisé par l'Ingress.
+        secretName: "{{ odoo_tls_secret_name }}"
+        dnsNames:
+          - "{{ odoo_domain }}"
+        issuerRef:
+          name: "{{ cluster_issuer_name }}"
+          kind: ClusterIssuer
+
+- name: Attendre que le certificat soit émis (secret TLS prêt)
+  kubernetes.core.k8s_info:
+    kubeconfig: "{{ kubeconfig_path }}"
+    api_version: cert-manager.io/v1
+    kind: Certificate
+    namespace: "{{ odoo_namespace }}"
+    name: "{{ odoo_release_name }}-tls"
+  register: odoo_certificate
+  until: >
+    odoo_certificate.resources | length > 0 and
+    odoo_certificate.resources[0].status.conditions | default([])
+      | selectattr('type', 'equalto', 'Ready')
+      | selectattr('status', 'equalto', 'True')
+      | list | length > 0
+  retries: 20
+  delay: 10
+
+- name: Créer l'Ingress HTTPS exposant Odoo à l'extérieur du cluster
+  kubernetes.core.k8s:
+    kubeconfig: "{{ kubeconfig_path }}"
+    state: present
+    definition:
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: "{{ odoo_release_name }}-ingress"
+        namespace: "{{ odoo_namespace }}"
+        annotations:
+          # Force la redirection de tout le trafic HTTP vers HTTPS
+          nginx.ingress.kubernetes.io/ssl-redirect: "true"
+          nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+          # Odoo utilise le websocket / longpolling : on augmente les
+          # timeouts par défaut pour éviter des déconnexions prématurées.
+          nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+          nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+      spec:
+        ingressClassName: nginx
+        tls:
+          - hosts:
+              - "{{ odoo_domain }}"
+            secretName: "{{ odoo_tls_secret_name }}"
+        rules:
+          - host: "{{ odoo_domain }}"
+            http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: "{{ odoo_release_name }}"
+                      port:
+                        number: 80

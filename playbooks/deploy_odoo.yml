@@ -1,0 +1,21 @@
+---
+# =============================================================================
+# Playbook : installation et configuration de l'applicatif Odoo sur le
+# cluster Kubernetes (Mission 7 du cahier des charges MSPR).
+#
+# Prérequis :
+#   - Un cluster Kubernetes opérationnel (control-plane + 2 workers, cf.
+#     Mission 6) et un kubeconfig valide (voir group_vars/all.yml).
+#   - Les collections Ansible installées : ansible-galaxy collection
+#     install -r requirements.yml
+#   - Le binaire "helm" installé sur le control node Ansible.
+#
+# Utilisation :
+#   ansible-playbook playbooks/deploy_odoo.yml
+# =============================================================================
+
+- name: Déploiement d'Odoo sur Kubernetes
+  hosts: k8s_control
+  gather_facts: false
+  roles:
+    - odoo

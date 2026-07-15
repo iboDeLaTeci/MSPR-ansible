@@ -1,0 +1,7 @@
+# Collections Ansible nécessaires au pilotage du cluster Kubernetes (API k8s
+# et Helm) depuis les playbooks de ce dépôt.
+#
+# Installation : ansible-galaxy collection install -r requirements.yml
+collections:
+  - name: kubernetes.core
+    version: ">=3.0.0"

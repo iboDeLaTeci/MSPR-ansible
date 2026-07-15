@@ -1,0 +1,3 @@
+---
+# Valeurs par défaut du rôle (surchargées par group_vars/all.yml)
+odoo_chart_version: ""

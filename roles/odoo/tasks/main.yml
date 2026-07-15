@@ -1,0 +1,88 @@
+---
+# =============================================================================
+# Rôle "odoo" : installation et configuration de l'ERP Odoo sur Kubernetes
+# via le chart Helm Bitnami, pilotée par le module kubernetes.core.helm.
+#
+# Le Service Kubernetes créé reste volontairement en ClusterIP : l'exposition
+# HTTPS vers l'extérieur du cluster est gérée séparément par le rôle
+# "odoo_ingress" (cert-manager + Ingress), conformément au sujet.
+# =============================================================================
+
+- name: Créer le namespace dédié à Odoo
+  kubernetes.core.k8s:
+    kubeconfig: "{{ kubeconfig_path }}"
+    api_version: v1
+    kind: Namespace
+    name: "{{ odoo_namespace }}"
+    state: present
+
+- name: Ajouter le dépôt Helm Bitnami
+  kubernetes.core.helm_repository:
+    name: "{{ odoo_chart_repo_name }}"
+    repo_url: "{{ odoo_chart_repo_url }}"
+
+- name: Déployer Odoo (+ PostgreSQL embarqué) via Helm
+  kubernetes.core.helm:
+    kubeconfig: "{{ kubeconfig_path }}"
+    name: "{{ odoo_release_name }}"
+    chart_ref: "{{ odoo_chart_name }}"
+    chart_version: "{{ odoo_chart_version | default(omit, true) }}"
+    release_namespace: "{{ odoo_namespace }}"
+    create_namespace: true
+    wait: true
+    wait_timeout: 10m0s
+    values:
+      # Identifiants du compte administrateur Odoo créé au premier démarrage
+      odooEmail: "{{ odoo_admin_email }}"
+      odooPassword: "{{ odoo_admin_password }}"
+
+      # Service interne uniquement : l'accès externe passe par l'Ingress
+      # créé dans le rôle odoo_ingress (HTTPS + certificat).
+      service:
+        type: ClusterIP
+
+      # On désactive l'Ingress généré automatiquement par le chart : nous
+      # créons notre propre ressource Ingress pour maîtriser le TLS et le
+      # ClusterIssuer cert-manager (voir rôle odoo_ingress).
+      ingress:
+        enabled: false
+
+      # Stockage persistant des données Odoo (filestore/attachments)
+      persistence:
+        enabled: "{{ odoo_persistence_enabled }}"
+        size: "{{ odoo_persistence_size }}"
+        storageClass: "{{ odoo_storage_class }}"
+
+      # On désactive le preset de ressources par défaut ("large") pour que
+      # les valeurs personnalisées ci-dessous soient bien appliquées.
+      resourcesPreset: "none"
+      resources: "{{ odoo_resources }}"
+
+      # Base de données PostgreSQL déployée avec Odoo (sous-chart Bitnami)
+      postgresql:
+        enabled: true
+        auth:
+          postgresPassword: "{{ postgresql_admin_password }}"
+          password: "{{ postgresql_admin_password }}"
+        primary:
+          resourcesPreset: "none"
+          persistence:
+            enabled: "{{ odoo_persistence_enabled }}"
+            size: "{{ postgresql_persistence_size }}"
+            storageClass: "{{ odoo_storage_class }}"
+
+- name: Attendre que le pod Odoo soit démarré et prêt
+  kubernetes.core.k8s_info:
+    kubeconfig: "{{ kubeconfig_path }}"
+    kind: Pod
+    namespace: "{{ odoo_namespace }}"
+    label_selectors:
+      - "app.kubernetes.io/instance={{ odoo_release_name }}"
+      - "app.kubernetes.io/name=odoo"
+  register: odoo_pods
+  until: >
+    odoo_pods.resources | length > 0 and
+    odoo_pods.resources[0].status.phase == 'Running' and
+    (odoo_pods.resources[0].status.containerStatuses | default([]) | map(attribute='ready') | list is all)
+  retries: 40
+  delay: 15

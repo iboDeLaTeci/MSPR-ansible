@@ -1,0 +1,5 @@
+---
+# Playbook global : déploie Odoo puis configure son accès HTTPS/SSL.
+# Utilisation : ansible-playbook playbooks/site.yml
+- import_playbook: deploy_odoo.yml
+- import_playbook: configure_https.yml

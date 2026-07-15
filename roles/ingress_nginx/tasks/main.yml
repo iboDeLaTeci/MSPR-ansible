@@ -1,0 +1,50 @@
+---
+# =============================================================================
+# Rôle "ingress_nginx" : déploiement du contrôleur Ingress NGINX.
+#
+# Nécessaire pour exposer les applicatifs du cluster (ici Odoo) en HTTP/HTTPS
+# vers l'extérieur. Sur une solution cloud managée (GKE/AKS/EKS) le
+# service.type=LoadBalancer provisionne directement un LB cloud. En
+# bare-metal (K0S/RKE2), un LoadBalancer (ex: MetalLB) doit déjà être en
+# place, sinon utiliser ingress_nginx_service_type: NodePort.
+# =============================================================================
+
+- name: Ajouter le dépôt Helm ingress-nginx
+  kubernetes.core.helm_repository:
+    name: "{{ ingress_nginx_chart_repo_name }}"
+    repo_url: "{{ ingress_nginx_chart_repo_url }}"
+
+- name: Déployer le contrôleur ingress-nginx via Helm
+  kubernetes.core.helm:
+    kubeconfig: "{{ kubeconfig_path }}"
+    name: "{{ ingress_nginx_release_name }}"
+    chart_ref: "{{ ingress_nginx_chart_name }}"
+    chart_version: "{{ ingress_nginx_chart_version | default(omit, true) }}"
+    release_namespace: "{{ ingress_nginx_namespace }}"
+    create_namespace: true
+    wait: true
+    wait_timeout: 5m0s
+    values:
+      controller:
+        service:
+          type: "{{ ingress_nginx_service_type }}"
+        # Déclare "nginx" comme IngressClass par défaut du cluster, utilisée
+        # par la ressource Ingress créée pour Odoo (rôle odoo_ingress).
+        ingressClassResource:
+          name: nginx
+          default: true
+
+- name: Attendre que le contrôleur ingress-nginx soit prêt
+  kubernetes.core.k8s_info:
+    kubeconfig: "{{ kubeconfig_path }}"
+    kind: Deployment
+    namespace: "{{ ingress_nginx_namespace }}"
+    label_selectors:
+      - "app.kubernetes.io/instance={{ ingress_nginx_release_name }}"
+      - "app.kubernetes.io/component=controller"
+  register: ingress_nginx_deploy
+  until: >
+    ingress_nginx_deploy.resources | length > 0 and
+    ingress_nginx_deploy.resources[0].status.availableReplicas | default(0) >= 1
+  retries: 20
+  delay: 10

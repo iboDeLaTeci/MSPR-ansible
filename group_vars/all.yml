@@ -1,0 +1,80 @@
+---
+# =============================================================================
+# Variables globales - Déploiement Odoo + HTTPS/SSL sur Kubernetes (Mission 7)
+# =============================================================================
+# ATTENTION : les valeurs marquées "A CHANGER" sont des valeurs par défaut de
+# démonstration. Ne pas les utiliser telles quelles en dehors d'un PoC.
+
+# Chemin vers le kubeconfig utilisé pour piloter le cluster (control-plane
+# créé lors de la Mission 6). Adapter selon l'environnement (kubeadm, k3s,
+# cluster managé type GKE/AKS/EKS, etc.)
+kubeconfig_path: "~/.kube/config"
+
+# -----------------------------------------------------------------------------
+# Odoo (chart Helm Bitnami)
+# -----------------------------------------------------------------------------
+odoo_namespace: odoo
+odoo_release_name: odoo
+
+odoo_chart_repo_name: bitnami
+odoo_chart_repo_url: https://charts.bitnami.com/bitnami
+odoo_chart_name: bitnami/odoo
+# Laisser vide pour installer la dernière version disponible du chart, ou
+# épingler une version précise pour la reproductibilité (recommandé en prod).
+odoo_chart_version: ""
+
+odoo_admin_email: admin@example.com
+odoo_admin_password: "ChangeMe123!"        # A CHANGER avant tout déploiement réel
+
+odoo_persistence_enabled: true
+odoo_persistence_size: 8Gi
+# Laisser vide pour utiliser la StorageClass par défaut du cluster (ex: si
+# nfs-subdir-external-provisioner est déjà configuré comme classe par défaut).
+odoo_storage_class: ""
+
+odoo_resources:
+  requests:
+    cpu: 500m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+postgresql_persistence_size: 8Gi
+postgresql_admin_password: "ChangeMePG123!"   # A CHANGER avant tout déploiement réel
+
+# -----------------------------------------------------------------------------
+# Ingress NGINX (exposition HTTP/HTTPS du cluster)
+# -----------------------------------------------------------------------------
+ingress_nginx_namespace: ingress-nginx
+ingress_nginx_release_name: ingress-nginx
+
+ingress_nginx_chart_repo_name: ingress-nginx
+ingress_nginx_chart_repo_url: https://kubernetes.github.io/ingress-nginx
+ingress_nginx_chart_name: ingress-nginx/ingress-nginx
+ingress_nginx_chart_version: ""
+
+# En bare-metal (K0S/RKE2 sans LoadBalancer cloud), il faut soit un MetalLB
+# déjà installé (service.type=LoadBalancer), soit exposer via NodePort.
+# Avec K3S, le ServiceLB intégré gère aussi le type LoadBalancer nativement.
+ingress_nginx_service_type: LoadBalancer
+
+# -----------------------------------------------------------------------------
+# cert-manager + certificat SSL autosigné (HTTPS)
+# -----------------------------------------------------------------------------
+cert_manager_namespace: cert-manager
+cert_manager_release_name: cert-manager
+
+cert_manager_chart_repo_name: jetstack
+cert_manager_chart_repo_url: https://charts.jetstack.io
+cert_manager_chart_name: jetstack/cert-manager
+cert_manager_chart_version: "v1.16.2"
+
+# Nom du ClusterIssuer autosigné (le sujet accepte les certificats
+# autosignés pour ce PoC, pas besoin de Let's Encrypt / CA publique)
+cluster_issuer_name: selfsigned-issuer
+
+# Nom de domaine utilisé pour accéder à Odoo. A ADAPTER : doit pointer (DNS
+# ou /etc/hosts) vers l'IP publique de l'Ingress (LoadBalancer/NodePort).
+odoo_domain: odoo.mspr.local
+odoo_tls_secret_name: odoo-tls-secret
