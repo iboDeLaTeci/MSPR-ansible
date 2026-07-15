@@ -86,6 +86,6 @@ build {
     environment_vars = [
       "MSPR_SSH_PUBLIC_KEY=${var.mspr_ssh_public_key}",
     ]
-    execute_command = "chmod +x {{ .Path }}; sudo -E bash {{ .Path }}"
+    execute_command = "chmod +x {{ .Path }}; {{ .Vars }} sudo -E bash {{ .Path }}"
   }
 }
