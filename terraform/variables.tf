@@ -62,8 +62,8 @@ variable "control_plane_instance_type" {
 
 variable "worker_instance_type" {
   type        = string
-  description = "Type d'instance EC2 des workers K3s (min. cahier des charges : 2 vCPU / 4 Go RAM recommandé, Odoo est gourmand)"
-  default     = "t3.medium"
+  description = "Type d'instance EC2 des workers K3s. Idéalement t3.medium (2 vCPU / 4 Go RAM, recommandé par le sujet), mais t3.small par défaut ici car de nombreux comptes AWS (Free Tier) refusent t3.medium. Passez à t3.medium si votre compte l'autorise."
+  default     = "t3.small"
 }
 
 variable "worker_count" {
