@@ -12,6 +12,14 @@ set -euxo pipefail
 
 # --- Mise à jour du système et paquets nécessaires ---------------------------
 export DEBIAN_FRONTEND=noninteractive
+
+# Bug connu sur les images cloud Ubuntu fraîches : le hook post-apt
+# "command-not-found" (déclenché automatiquement après apt-get update) plante
+# car un fichier d'index optionnel (Commands-amd64) n'est pas téléchargé par
+# défaut, ce qui fait sortir apt-get update en erreur alors que la mise à
+# jour des paquets a bien réussi. On désactive ce hook avant de continuer.
+sudo rm -f /etc/apt/apt.conf.d/50command-not-found
+
 sudo apt-get update -y
 sudo apt-get upgrade -y
 sudo apt-get install -y \
